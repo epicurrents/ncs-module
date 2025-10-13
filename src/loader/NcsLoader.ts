@@ -8,7 +8,7 @@
 import { GenericStudyLoader } from '@epicurrents/core'
 import type {
     ConfigStudyLoader,
-    FileFormatReader,
+    FileFormatImporter,
     FileSystemItem,
     StudyContext,
 } from '@epicurrents/core/dist/types'
@@ -19,8 +19,8 @@ import { Log } from 'scoped-event-log'
 const SCOPE = 'NcsLoader'
 
 export default class NcsLoader extends GenericStudyLoader {
-    constructor (name: string, reader: FileFormatReader) {
-        super(name, ['ncs'], reader)
+    constructor (name: string, importer: FileFormatImporter) {
+        super(name, ['ncs'], importer)
     }
 
     get resourceModality () {
@@ -41,7 +41,7 @@ export default class NcsLoader extends GenericStudyLoader {
             SCOPE)
             return null
         }
-        const worker = this._fileReader?.getFileTypeWorker()
+        const worker = this._studyImporter?.getFileTypeWorker()
         if (!worker) {
             Log.error(`Study loader does not have a file worker.`, SCOPE)
             return null
