@@ -52,8 +52,8 @@ export default class NcsLoader extends GenericStudyLoader {
         }
         const ncs = new NcsRecording(
             this._study.name,
-            this._study,
             worker,
+            this._study,
         )
         ncs.state = 'loaded'
         ncs.source = this._study

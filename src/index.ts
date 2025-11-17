@@ -1,3 +1,5 @@
+import NcsEvent from '#components/NcsEvent'
+import NcsLabel from '#components/NcsLabel'
 import NcsLoader from '#loader/NcsLoader'
 import NcsRecording from './NcsRecording'
 import NcsService from '#service/NcsService'
@@ -7,6 +9,8 @@ import settings from './config'
 const modality = 'ncs'
 
 export {
+    NcsEvent,
+    NcsLabel,
     NcsLoader,
     NcsRecording,
     NcsService,

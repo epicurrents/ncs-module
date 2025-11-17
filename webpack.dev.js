@@ -65,6 +65,7 @@ module.exports = {
         extensions: ['.ts', '.js', '.json'],
         alias: {
             '#root': path.resolve(__dirname, './'),
+            '#components': path.resolve(__dirname, 'src', 'components'),
             '#config': path.resolve(__dirname, 'src', 'config'),
             '#runtime': path.resolve(__dirname, 'src', 'runtime'),
             '#types': path.resolve(__dirname, 'src', 'types'),

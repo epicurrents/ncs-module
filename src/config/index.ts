@@ -8,5 +8,6 @@
 import type { NcsModuleSettings } from '#types'
 
 const ncsSettings: NcsModuleSettings = {
+    useMemoryManager: false,
 }
 export default ncsSettings
