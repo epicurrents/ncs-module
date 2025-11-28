@@ -26,6 +26,10 @@ import { calculateSignalOffsets } from '@epicurrents/core/dist/util'
 export default class NcsRecording extends GenericBiosignalResource implements NcsResource {
     static readonly fromSerialized = (template: Partial<NcsResource>) => {
         const resource = new NcsRecording(template.name || 'NCS Recording')
+        if (template.id) {
+            // Override the generated id with the template id.
+            resource._id = template.id
+        }
         resource.dataDuration = template.dataDuration || 0
         resource.samplingRate = template.samplingRate || 0
         resource.type = template.type || 'unknown'
