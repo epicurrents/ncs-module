@@ -8,18 +8,30 @@
 import { GenericBiosignalEvent } from '@epicurrents/core'
 import type {
     AnnotationEventTemplate,
-    BiosignalAnnotationEvent,
+    BiosignalAnnotationEventOptions,
     SettingsColor,
 } from '@epicurrents/core/dist/types'
 
-//const SCOPE = 'NcsEvent'
+const SCOPE = 'NcsEvent'
 
 export default class NcsEvent extends GenericBiosignalEvent {
 
     public static fromTemplate (tpl: AnnotationEventTemplate) {
         return new NcsEvent(
             tpl.start, tpl.duration, tpl.label || '',
-            tpl.class, tpl.channels, tpl.codes, tpl.priority, tpl.text, tpl.visible, tpl.background, tpl.color, tpl.opacity
+            {
+                annotator: tpl.annotator || undefined,
+                background: tpl.background || undefined,
+                channels: tpl.channels || undefined,
+                class: tpl.class || undefined,
+                color: tpl.color as SettingsColor || undefined,
+                codes: tpl.codes || undefined,
+                label: tpl.label || undefined,
+                opacity: tpl.opacity || undefined,
+                priority: tpl.priority || undefined,
+                text: tpl.text || undefined,
+                visible: tpl.visible || undefined,
+            }
         )
     }
 
@@ -27,13 +39,8 @@ export default class NcsEvent extends GenericBiosignalEvent {
         // Required properties:
         start: number, duration: number, label: string,
         // Optional properties:
-        annoClass?: BiosignalAnnotationEvent['class'], channels?: (number | string)[], codes?: (number | string)[],
-        priority?: number, text?: string, visible?: boolean, background?: boolean, color?: SettingsColor,
-        opacity?: number
+        options?: BiosignalAnnotationEventOptions
     ) {
-        super(
-            'NcsEvent', start, duration, label,
-            annoClass, channels, codes, priority, text, visible, background, color, opacity
-        )
+        super(SCOPE, start, duration, label, options)
     }
 }
