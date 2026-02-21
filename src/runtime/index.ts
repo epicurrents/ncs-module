@@ -6,6 +6,7 @@
  */
 
 import { logInvalidMutation } from '@epicurrents/core/dist/runtime'
+import { safeObjectFrom } from '@epicurrents/core/dist/util'
 import type {
     DataResource,
     RuntimeResourceModule,
@@ -17,8 +18,7 @@ import NcsRecording from '../NcsRecording'
 
 const SCOPE = 'ncs-runtime-module'
 
-const NCS: SafeObject & RuntimeResourceModule = {
-    __proto__: null,
+const NCS = safeObjectFrom({
     moduleName: {
         code: 'ncs',
         full: 'Nerve Conduction Studies',
@@ -90,5 +90,5 @@ const NCS: SafeObject & RuntimeResourceModule = {
             }
         }
     },
-}
+} as SafeObject & RuntimeResourceModule)
 export default NCS
