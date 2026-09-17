@@ -11,7 +11,7 @@ import type {
     FileFormatImporter,
     FileSystemItem,
     StudyContext,
-} from '@epicurrents/core/dist/types'
+} from '@epicurrents/core/types'
 import { NcsRecording } from '..'
 import type { NcsResource } from '#types'
 import { Log } from 'scoped-event-log'

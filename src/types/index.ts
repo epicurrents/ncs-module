@@ -1,4 +1,4 @@
-import type { BaseModuleSettings, BiosignalDataService, BiosignalResource } from "@epicurrents/core/dist/types"
+import type { BaseModuleSettings, BiosignalDataService, BiosignalResource } from "@epicurrents/core/types"
 
 export interface NcsDataService extends BiosignalDataService {
 

@@ -6,7 +6,7 @@
  */
 
 import { GenericBiosignalService } from '@epicurrents/core'
-import type { StudyContext, UrlAccessOptions, WorkerResponse } from '@epicurrents/core/dist/types'
+import type { StudyContext, UrlAccessOptions, WorkerResponse } from '@epicurrents/core/types'
 import type { NcsDataService, NcsResource, SetupNcsWorkerResponse } from '#types'
 //import { Log } from 'scoped-event-log'
 

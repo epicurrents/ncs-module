@@ -6,7 +6,7 @@
  */
 
 import { GenericBiosignalChannelMarker } from '@epicurrents/core'
-import type { BiosignalChannel } from '@epicurrents/core/dist/types'
+import type { BiosignalChannel } from '@epicurrents/core/types'
 
 export default class NcsChannelMarker extends GenericBiosignalChannelMarker {
 

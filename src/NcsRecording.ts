@@ -6,7 +6,7 @@
  */
 
 import { GenericBiosignalResource } from '@epicurrents/core'
-import type { StudyContext } from '@epicurrents/core/dist/types'
+import type { StudyContext } from '@epicurrents/core/types'
 import NcsService from '#service/NcsService'
 import type {
     NcsNerveSegment,
@@ -16,7 +16,7 @@ import type {
 } from '#types'
 import NcsChannel from '#components/NcsChannel'
 import NcsChannelMarker from '#components/NcsChannelMarker'
-import { calculateSignalOffsets } from '@epicurrents/core/dist/util'
+import { calculateSignalOffsets } from '@epicurrents/core/util'
 //import { Log } from 'scoped-event-log'
 
 //const SCOPE = "NcsRecording"
