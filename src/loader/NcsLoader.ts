@@ -37,17 +37,14 @@ export default class NcsLoader extends GenericStudyLoader {
         // Create a new resource from the loaded study.
         if (!this._study.name) {
             Log.error(
-                `Cannot construct a NCS resource from given study context; it is missing required properties.`,
-            SCOPE)
+                `Cannot construct an NCS resource from the given study context; it has no name.`,
+                SCOPE
+            )
             return null
         }
         const worker = this._studyImporter?.getFileTypeWorker()
         if (!worker) {
             Log.error(`Study loader does not have a file worker.`, SCOPE)
-            return null
-        }
-        if (!worker) {
-            Log.error(`Study loader doesn't have a file type loader.`, SCOPE)
             return null
         }
         const ncs = new NcsRecording(
@@ -75,7 +72,7 @@ export default class NcsLoader extends GenericStudyLoader {
     public async loadFromUrl (
         fileUrl: string,
         config?: ConfigStudyLoader,
-        preStudy?: StudyContext | undefined
+        preStudy?: StudyContext
     ): Promise<StudyContext | null> {
         const context = await super.loadFromUrl(fileUrl, config, preStudy)
         if (!context) {

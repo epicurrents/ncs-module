@@ -1,12 +1,32 @@
-import type { BaseModuleSettings, BiosignalDataService, BiosignalResource } from "@epicurrents/core/types"
+/**
+ * Epicurrents NCS module types.
+ * @package    epicurrents/ncs-module
+ * @copyright  2025 Sampsa Lohi
+ * @license    Apache-2.0
+ */
 
+import type {
+    BaseModuleSettings,
+    BiosignalDataService,
+    BiosignalResource,
+    CommonBiosignalSettings,
+} from '@epicurrents/core/types'
+
+/**
+ * Data service of an NCS resource. The modality adds no members of its own to the base service; the
+ * alias exists so a consumer names the service it holds rather than the generic one, and so a future
+ * NCS-only method has a declaration site that is already imported everywhere.
+ */
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type -- named seam, see above.
 export interface NcsDataService extends BiosignalDataService {
-
 }
 
-export type NcsModuleSettings = BaseModuleSettings & {
-
-}
+/**
+ * Settings of the NCS module. The modality adds no settings of its own to the common biosignal set,
+ * which it does carry: an NCS resource is a biosignal resource, and core reads the common fields off
+ * whatever a module declares rather than off a modality-specific list.
+ */
+export type NcsModuleSettings = BaseModuleSettings & CommonBiosignalSettings
 
 export type NcsNerveSegment = {
     /** Computed amplitude `start`-`end` difference (as a fraction). */
@@ -57,7 +77,7 @@ export interface NcsResource extends BiosignalResource {
     /** The nerve segments associated with the NCS resource. */
     segments: NcsNerveSegment[]
     /** Type of the NCS recording. */
-    type: SupporterNcsStudyType
+    type: SupportedNcsStudyType
 }
 
 export type NcsStimulationSite = {
@@ -87,5 +107,5 @@ export type SetupNcsWorkerResponse = {
     samplingRate: number
 }
 
-export type SupporterNcsStudyType = 'fwave' | 'hreflex' | 'motor' | 'sensory' | 'unknown'
+export type SupportedNcsStudyType = 'fwave' | 'hreflex' | 'motor' | 'sensory' | 'unknown'
                                   /* | 'blink' | 'mep' | 'rns' | 'ssep' // Future types. */
