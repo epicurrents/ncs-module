@@ -1,10 +1,10 @@
 /**
- * Tests for the `NcsRecording` constructor's setup path.
+ * Tests for the `NcsRecording` constructor and its load.
  *
- * A recording given a worker and a source commissions its setup from the constructor and reports the
- * outcome through its own state. All three outcomes matter, and the rejecting one most: a commission
- * that rejects with no handler leaves the recording in `loading` for the rest of the session with the
- * cause reported nowhere, which is indistinguishable from a worker that never answered.
+ * A recording given a worker getter starts no worker when it is created; loading it commissions the setup and
+ * reports the outcome through its own state. All three outcomes matter, and the rejecting one most: a commission
+ * that rejects with no handler leaves the recording in `loading` for the rest of the session with the cause
+ * reported nowhere, which is indistinguishable from a worker that never answered.
  * @package    epicurrents/ncs-module
  * @copyright  2025 Sampsa Lohi
  * @license    Apache-2.0
@@ -50,37 +50,60 @@ describe('a recording with no worker', () => {
     })
 })
 
-describe('a recording with a worker and a source', () => {
-    it('reports itself loading until the worker answers', () => {
+describe('a recording with a worker getter', () => {
+    it('asks for no worker when it is created', () => {
+        const getWorker = vi.fn(worker)
+        const recording = new NcsRecording('NCS', getWorker, study())
+        expect(getWorker).not.toHaveBeenCalled()
+        expect(recording.state).toBe('added')
+    })
+
+    it('reports itself loading until the worker answers', async () => {
         vi.spyOn(NcsService.prototype, 'prepareWorker').mockReturnValue(new Promise(() => undefined))
-        expect(new NcsRecording('NCS', worker(), study()).state).toBe('loading')
+        const recording = new NcsRecording('NCS', worker, study())
+        void recording.load()
+        await vi.waitFor(() => expect(NcsService.prototype.prepareWorker).toHaveBeenCalled())
+        expect(recording.state).toBe('loading')
     })
 
     it('becomes ready when the setup succeeds', async () => {
         vi.spyOn(NcsService.prototype, 'prepareWorker')
             .mockResolvedValue({ success: true, channels: 1, samplingRate: 1 })
-        const recording = new NcsRecording('NCS', worker(), study())
-        await vi.waitFor(() => expect(recording.state).toBe('ready'))
+        const recording = new NcsRecording('NCS', worker, study())
+        expect(await recording.load()).toBe(true)
+        expect(recording.state).toBe('ready')
     })
 
     it('becomes errored when the setup reports failure', async () => {
         vi.spyOn(NcsService.prototype, 'prepareWorker')
             .mockResolvedValue({ success: false, channels: 0, samplingRate: 0 })
-        const recording = new NcsRecording('NCS', worker(), study())
-        await vi.waitFor(() => expect(recording.state).toBe('error'))
+        const recording = new NcsRecording('NCS', worker, study())
+        expect(await recording.load()).toBe(false)
+        expect(recording.state).toBe('error')
+        expect(recording.errorReason).toBe('Preparing worker failed')
     })
 
     it('becomes errored when the setup answers nothing', async () => {
         // Which is what the service does for a study carrying no NCS data file.
         vi.spyOn(NcsService.prototype, 'prepareWorker').mockResolvedValue(null)
-        const recording = new NcsRecording('NCS', worker(), study())
-        await vi.waitFor(() => expect(recording.state).toBe('error'))
+        const recording = new NcsRecording('NCS', worker, study())
+        expect(await recording.load()).toBe(false)
+        expect(recording.state).toBe('error')
     })
 
     it('becomes errored and reports the cause when the setup rejects', async () => {
         vi.spyOn(NcsService.prototype, 'prepareWorker').mockRejectedValue(new Error('worker gone'))
-        const recording = new NcsRecording('NCS', worker(), study())
-        await vi.waitFor(() => expect(recording.state).toBe('error'))
-        expect(Log.error).toHaveBeenCalled()
+        const recording = new NcsRecording('NCS', worker, study())
+        expect(await recording.load()).toBe(false)
+        expect(recording.state).toBe('error')
+        expect(Log.error).toHaveBeenCalledWith(
+            expect.stringContaining('Preparing the NCS worker'), expect.anything(), expect.any(Error)
+        )
+    })
+
+    it('becomes errored when there is no worker to load with', async () => {
+        const recording = new NcsRecording('NCS', () => null, study())
+        expect(await recording.load()).toBe(false)
+        expect(recording.errorReason).toBe('No file worker')
     })
 })

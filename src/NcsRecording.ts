@@ -176,6 +176,8 @@ export default class NcsRecording extends GenericBiosignalResource implements Nc
         return resource
     }
 
+    /** Gives the worker the service runs on, asked for only when the recording loads. */
+    protected _getWorker: (() => Worker | null) | null
     protected _segments: NcsNerveSegment[] = []
     protected _service: NcsService | null = null
     protected _sites: NcsStimulationSite[] = []
@@ -184,36 +186,17 @@ export default class NcsRecording extends GenericBiosignalResource implements Nc
     /**
      * Create a new NCS recording.
      *
-     * A recording given both a worker and a source starts its setup here and reports itself loading
-     * until the worker answers. One given neither is ready immediately, which is the deserialised
-     * case: its signals arrived with the template rather than being read.
+     * A recording given a worker getter starts no worker here: it creates its service and sets the worker up on its
+     * source when it loads, and reports itself ready only once the worker has answered. One given none is ready
+     * immediately, which is the deserialised case: its signals arrived with the template rather than being read.
      * @param name - Recording name; this will be displayed in the UI.
-     * @param worker - Worker to run the NCS service on; without one the recording has no service.
-     * @param source - Recording source as a study context; the worker is pointed at its data file.
+     * @param getWorker - Gives the worker to run the NCS service on when the recording loads.
+     * @param source - Recording source as a study context; absent for a listed recording until its study is read.
      */
-    constructor (name: string, worker?: Worker, source?: StudyContext) {
+    constructor (name: string, getWorker?: () => Worker | null, source?: StudyContext) {
         super(name, 'ncs', source)
-        if (worker) {
-            this._service = new NcsService(this, worker)
-        }
-        if (source && this._service) {
-            this._state = 'loading'
-            // The rejection handler is what makes this a decision rather than a hang: the commission
-            // rejects on a worker-reported failure, and without a catch the resource stays in
-            // `loading` for the rest of its life with the cause reported nowhere.
-            this._service.prepareWorker(source).then((response) => {
-                if (response?.success) {
-                    this._state = 'ready'
-                } else {
-                    this._errorReason = 'Preparing worker failed'
-                    this._state = 'error'
-                }
-            }).catch((e: unknown) => {
-                Log.error(`Preparing the NCS worker failed.`, SCOPE, asError(e))
-                this._errorReason = 'Preparing worker failed'
-                this._state = 'error'
-            })
-        } else {
+        this._getWorker = getWorker ?? null
+        if (!getWorker) {
             this._state = 'ready'
         }
     }
@@ -237,6 +220,38 @@ export default class NcsRecording extends GenericBiosignalResource implements Nc
     }
     set type (type: SupportedNcsStudyType) {
         this._setPropertyValue('type', type)
+    }
+
+    /**
+     * Create the service and set its worker up on the study in `_source`.
+     */
+    protected async _load () {
+        if (!this._source) {
+            Log.error(`Cannot load the NCS recording ${this.name}; it has no source study.`, SCOPE)
+            this._errorReason = 'Recording has no study'
+            return false
+        }
+        if (!this._service) {
+            const worker = this._getWorker?.() ?? null
+            if (!worker) {
+                Log.error(`Cannot load the NCS recording ${this.name}; there is no file worker for it.`, SCOPE)
+                this._errorReason = 'No file worker'
+                return false
+            }
+            this._service = new NcsService(this, worker)
+        }
+        // A commission that rejects on a worker-reported failure is a failed load like any other, with the cause
+        // logged; left unhandled it would be reported nowhere.
+        try {
+            const response = await this._service.prepareWorker(this._source)
+            if (response?.success) {
+                return true
+            }
+        } catch (e: unknown) {
+            Log.error(`Preparing the NCS worker failed.`, SCOPE, asError(e))
+        }
+        this._errorReason = 'Preparing worker failed'
+        return false
     }
 
     getMainProperties () {

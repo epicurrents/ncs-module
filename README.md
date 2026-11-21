@@ -47,7 +47,7 @@ Two routes exist, and only one of them currently has a producer.
 
 **From a serialized resource.** `NcsRecording.fromSerialized` builds a recording from an already-decoded template: channels carrying their signals, plus the sites and segments. This is the route the application takes through `getResourceFromSerialized`, and it is how every NCS study in this family is opened, because the one producer reads a vendor database over an API rather than parsing a file.
 
-**From a study file.** `NcsLoader` and `NcsService` describe a reader worker opening an NCS data file, the same shape every other modality in this family uses. No reader in this family currently answers it; the path is a contract to grow into. [ROADMAP.md](ROADMAP.md) covers what deciding its future involves.
+**From a study file.** `NcsLoader` and `NcsService` describe a reader worker opening an NCS data file, the same shape every other modality in this family uses. The loader builds the recording unloaded, from a read study or from a host's listing, and the recording asks for its worker and sets it up only when it loads. No reader in this family currently answers it; the path is a contract to grow into. [ROADMAP.md](ROADMAP.md) covers what deciding its future involves.
 
 ### A segment whose sites do not resolve is dropped
 

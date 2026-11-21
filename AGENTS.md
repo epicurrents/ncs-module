@@ -67,7 +67,7 @@ Each slot below takes a callback whose return value is discarded, so each needs 
 | Site | What is caught |
 |---|---|
 | `message` listener in `NcsService` | `handleMessage`, which is async while the listener slot is not. |
-| The `.then` on `prepareWorker` in `NcsRecording` | A rejected setup commission, which otherwise leaves the recording in `loading` for the rest of the session with nothing said about why. |
+| `prepareWorker` in `NcsRecording._load` | A rejected setup commission, which resolves the load false with a reason and the cause logged, rather than leaving the rejection to core's generic failure. |
 | The three filter setters in the runtime module | A rejected application, which otherwise says nothing while the control that triggered it keeps showing a value that was never applied. |
 
 `@typescript-eslint/no-floating-promises` is on and catches a new branch that forgets one.

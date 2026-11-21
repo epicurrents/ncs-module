@@ -11,6 +11,7 @@ import type {
     FileFormatImporter,
     FileSystemItem,
     StudyContext,
+    StudyListing,
 } from '@epicurrents/core/types'
 import { NcsRecording } from '..'
 import type { NcsResource } from '#types'
@@ -25,6 +26,20 @@ export default class NcsLoader extends GenericStudyLoader {
 
     get resourceModality () {
         return 'ncs'
+    }
+
+    /**
+     * The importer's file worker. A recording asks for it when it loads, not when it is created.
+     */
+    protected _getFileWorker () {
+        return this._studyImporter?.getFileTypeWorker() ?? null
+    }
+
+    createListedResource (listing: StudyListing) {
+        const ncs = new NcsRecording(listing.name, () => this._getFileWorker())
+        // Kept out of `_resources`: that list is what a read study's resource is found in by index, and a listing
+        // entered between a read and its `getResource` would take the read study's place.
+        return ncs
     }
 
     async getResource (idx: number | string = -1): Promise<NcsResource | null> {
@@ -42,18 +57,13 @@ export default class NcsLoader extends GenericStudyLoader {
             )
             return null
         }
-        const worker = this._studyImporter?.getFileTypeWorker()
-        if (!worker) {
-            Log.error(`Study loader does not have a file worker.`, SCOPE)
-            return null
-        }
+        // Built unloaded, as a listed recording is: the loader that opened the study loads it straight after.
         const ncs = new NcsRecording(
             this._study.name,
-            worker,
+            () => this._getFileWorker(),
             this._study,
         )
         ncs.state = 'loaded'
-        ncs.source = this._study
         this._resources.push(ncs)
         // Clear the loaded study.
         this._study = null

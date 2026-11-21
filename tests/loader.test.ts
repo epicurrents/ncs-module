@@ -1,9 +1,9 @@
 /**
  * Tests for `NcsLoader`.
  *
- * The loader's own contribution is narrow: it tags whatever the generic loader produced as an NCS
- * study, and it refuses to build a resource it cannot give a worker. Both are asserted against the
- * base class's result rather than against a real file, since nothing here parses one.
+ * The loader's own contribution is narrow: it tags whatever the generic loader produced as an NCS study, and it
+ * builds the recording unloaded, from a read study or from a listing. Both are asserted against the base class's
+ * result rather than against a real file, since nothing here parses one.
  * @package    epicurrents/ncs-module
  * @copyright  2025 Sampsa Lohi
  * @license    Apache-2.0
@@ -78,14 +78,16 @@ describe('getResource', () => {
         await expect(loaderWith().getResource()).resolves.toBeNull()
     })
 
-    it('refuses a study the importer can give no worker for', async () => {
-        // A recording constructed without one never commissions a setup, so it would sit in its
-        // initial state reporting itself loaded.
+    it('builds the recording unloaded, and fails its load when the importer gives no worker', async () => {
         vi.spyOn(GenericStudyLoader.prototype, 'getResource').mockResolvedValue(null)
-        const loader = loaderWith()
-        ;(loader as unknown as { _study: StudyContext })._study = { name: 's' } as StudyContext
-        await expect(loader.getResource()).resolves.toBeNull()
-        expect(Log.error).toHaveBeenCalledWith(expect.stringContaining('file worker'), expect.anything())
+        const getFileTypeWorker = vi.fn(() => null)
+        const loader = loaderWith({ getFileTypeWorker })
+        ;(loader as unknown as { _study: StudyContext })._study = { name: 's', files: [] } as unknown as StudyContext
+        const resource = await loader.getResource()
+        expect(resource?.state).toBe('loaded')
+        expect(getFileTypeWorker).not.toHaveBeenCalled()
+        expect(await resource?.load()).toBe(false)
+        expect(resource?.errorReason).toBe('No file worker')
     })
 
     it('builds a recording from the loaded study and clears it', async () => {
@@ -105,5 +107,17 @@ describe('getResource', () => {
         ;(loader as unknown as { _study: StudyContext })._study = { name: '' } as StudyContext
         await expect(loader.getResource()).resolves.toBeNull()
         expect(Log.error).toHaveBeenCalledWith(expect.stringContaining('no name'), expect.anything())
+    })
+})
+
+describe('createListedResource', () => {
+    it('creates an NCS recording that has read nothing and started no worker', () => {
+        const getFileTypeWorker = vi.fn(fakeWorker)
+        const resource = loaderWith({ getFileTypeWorker })
+            .createListedResource({ loader: 'ncs', name: 'Listed', source: 'blob:ncs' })
+        expect(resource.modality).toBe('ncs')
+        expect(resource.state).toBe('added')
+        expect(resource.source).toBeNull()
+        expect(getFileTypeWorker).not.toHaveBeenCalled()
     })
 })
