@@ -66,6 +66,13 @@ describe('modality', () => {
         expect(context?.modality).toBe('ncs')
     })
 
+    it('tags a context loaded from a file', async () => {
+        vi.spyOn(GenericStudyLoader.prototype, 'loadFromFile')
+            .mockResolvedValue({ name: 's', modality: 'unknown' } as unknown as StudyContext)
+        const context = await loaderWith().loadFromFile(new File(['ncs'], 'study.ncs'))
+        expect(context?.modality).toBe('ncs')
+    })
+
     it('passes a null context through rather than tagging one that does not exist', async () => {
         vi.spyOn(GenericStudyLoader.prototype, 'loadFromUrl').mockResolvedValue(null)
         await expect(loaderWith().loadFromUrl('https://example.test/study')).resolves.toBeNull()

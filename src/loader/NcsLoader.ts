@@ -29,6 +29,19 @@ export default class NcsLoader extends GenericStudyLoader {
     }
 
     /**
+     * Claim a loaded `study` for the NCS modality. The format importers stamp no modality of their own, and a study
+     * read for a listed recording is refused unless it carries the one the recording was listed under, so every
+     * loading path claims it.
+     */
+    protected _claimAsNcs (study: StudyContext | null): StudyContext | null {
+        if (!study) {
+            return null
+        }
+        study.modality = 'ncs'
+        return study
+    }
+
+    /**
      * The importer's file worker. A recording asks for it when it loads, not when it is created.
      */
     protected _getFileWorker () {
@@ -36,10 +49,8 @@ export default class NcsLoader extends GenericStudyLoader {
     }
 
     createListedResource (listing: StudyListing) {
-        const ncs = new NcsRecording(listing.name, () => this._getFileWorker())
-        // Kept out of `_resources`: that list is what a read study's resource is found in by index, and a listing
-        // entered between a read and its `getResource` would take the read study's place.
-        return ncs
+        // Kept out of `_resources`, which is where a read study's resource is found by index.
+        return new NcsRecording(listing.name, () => this._getFileWorker())
     }
 
     async getResource (idx: number | string = -1): Promise<NcsResource | null> {
@@ -71,12 +82,15 @@ export default class NcsLoader extends GenericStudyLoader {
     }
 
     public async loadFromDirectory (dir: FileSystemItem, config?: ConfigStudyLoader): Promise<StudyContext|null> {
-        const context = await super.loadFromDirectory(dir, config)
-        if (!context) {
-            return null
-        }
-        context.modality = 'ncs'
-        return context
+        return this._claimAsNcs(await super.loadFromDirectory(dir, config))
+    }
+
+    public async loadFromFile (
+        file: File,
+        config?: ConfigStudyLoader,
+        preStudy?: StudyContext
+    ): Promise<StudyContext | null> {
+        return this._claimAsNcs(await super.loadFromFile(file, config, preStudy))
     }
 
     public async loadFromUrl (
@@ -84,11 +98,6 @@ export default class NcsLoader extends GenericStudyLoader {
         config?: ConfigStudyLoader,
         preStudy?: StudyContext
     ): Promise<StudyContext | null> {
-        const context = await super.loadFromUrl(fileUrl, config, preStudy)
-        if (!context) {
-            return null
-        }
-        context.modality = 'ncs'
-        return context
+        return this._claimAsNcs(await super.loadFromUrl(fileUrl, config, preStudy))
     }
 }

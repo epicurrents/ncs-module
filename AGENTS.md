@@ -72,6 +72,8 @@ Each slot below takes a callback whose return value is discarded, so each needs 
 
 `@typescript-eslint/no-floating-promises` is on and catches a new branch that forgets one.
 
+A load that fails shuts down the service it created, without awaiting the shutdown, so core's `retryLoad` sets the recording up again on a new worker from the study it kept. The base class destroys the service of a destroyed recording.
+
 ## Delegating to the base class is the service's whole contract
 
 `GenericService._getCommissionForMessage` **looks a commission up and does not settle it.** A `handleMessage` override that reads it and returns leaves every awaited commission pending for the life of the study: setting a worker up never completes, the entry is never released, and nothing reports a failure — the worker answered and the answer went nowhere. [NcsService](src/service/NcsService.ts) exists to add nothing and call `super`.

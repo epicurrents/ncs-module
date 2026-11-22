@@ -6,7 +6,7 @@
  */
 
 import { GenericBiosignalResource } from '@epicurrents/core'
-import type { StudyContext } from '@epicurrents/core/types'
+import type { ConfigStudyLoader, StudyContext } from '@epicurrents/core/types'
 import NcsService from '#service/NcsService'
 import type {
     NcsNerveSegment,
@@ -224,13 +224,17 @@ export default class NcsRecording extends GenericBiosignalResource implements Nc
 
     /**
      * Create the service and set its worker up on the study in `_source`.
+     * @param options - Options to load with; the worker opens the data file with the authorization header among them.
      */
-    protected async _load () {
+    protected async _load (options?: ConfigStudyLoader) {
         if (!this._source) {
             Log.error(`Cannot load the NCS recording ${this.name}; it has no source study.`, SCOPE)
             this._errorReason = 'Recording has no study'
             return false
         }
+        // Read before the await; the check after it is against this.
+        const generation = this._loadGeneration
+        let created: NcsService | null = null
         if (!this._service) {
             const worker = this._getWorker?.() ?? null
             if (!worker) {
@@ -238,24 +242,65 @@ export default class NcsRecording extends GenericBiosignalResource implements Nc
                 this._errorReason = 'No file worker'
                 return false
             }
-            this._service = new NcsService(this, worker)
+            created = new NcsService(this, worker)
+            this._service = created
         }
         // A commission that rejects on a worker-reported failure is a failed load like any other, with the cause
         // logged; left unhandled it would be reported nowhere.
+        let prepared = false
         try {
-            const response = await this._service.prepareWorker(this._source)
-            if (response?.success) {
-                return true
-            }
+            const response = await this._service.prepareWorker(this._source, options)
+            prepared = !!response?.success
         } catch (e: unknown) {
             Log.error(`Preparing the NCS worker failed.`, SCOPE, asError(e))
         }
+        // A recording unloaded or destroyed while its worker was being prepared has nothing left to set up, and its
+        // state belongs to whatever superseded the load.
+        if (this._isLoadSuperseded(generation)) {
+            this._releaseSupersededService(created)
+            return false
+        }
+        if (prepared) {
+            return true
+        }
         this._errorReason = 'Preparing worker failed'
+        // A service created for a load that failed would keep its worker running for nothing: a retry creates its
+        // own. The shutdown is not awaited: it waits on an answer from a worker that has just failed to give one, and
+        // the load's outcome does not depend on it.
+        if (created && this._service === created) {
+            this._service = null
+            created.destroy().catch((e: unknown) => {
+                Log.warn(`Shutting down the NCS worker after a failed load failed: ${asError(e).message}`, SCOPE)
+            })
+        }
         return false
+    }
+
+    /**
+     * Shut down the service a superseded load created, so its worker does not outlive a load that set nothing up. A
+     * service the recording no longer holds has been released by whatever superseded the load, and one a later load
+     * has taken up is that load's to keep.
+     * @param created - The service the superseded load created; null when it used one the recording already had.
+     */
+    protected _releaseSupersededService (created: NcsService | null) {
+        if (!created || this._service !== created || this._loadRun || this._state === 'ready') {
+            return
+        }
+        this._service = null
+        created.destroy().catch((e: unknown) => {
+            Log.warn(`Shutting down the NCS worker of a superseded load failed: ${asError(e).message}`, SCOPE)
+        })
     }
 
     getMainProperties () {
         const props = super.getMainProperties()
         return props
+    }
+
+    /**
+     * Load the recording; see {@link load}.
+     */
+    prepare (options?: ConfigStudyLoader) {
+        return this.load(options)
     }
 }
